@@ -2,15 +2,24 @@
 	"compilerOptions": {
 		"module": "Node16",
 		"target": "ES2022",
-		"lib": [
-			"ES2022"
-		],
 		"sourceMap": true,
-		"rootDir": "src",
-		"strict": true,   /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-	}
+        "rootDir": "src",
+        "strict": true, // Enable strict type checking
+        "esModuleInterop": true, // Recommended for compatibility
+        "skipLibCheck": true, // Optional: Speeds up compilation by skipping d.ts checks
+        "forceConsistentCasingInFileNames": true // Good practice
+        /* Additional options */
+        // "noUnusedLocals": true,                /* Report errors on unused locals. */
+        // "noUnusedParameters": true,            /* Report errors on unused parameters. */
+        // "noImplicitReturns": true,             /* Report error when not all code paths in function return a value. */
+        // "noFallthroughCasesInSwitch": true,    /* Report errors for fallthrough cases in switch statement. */
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        ".vscode-test",
+        "dist" // Exclude the output directory
+    ]
 }

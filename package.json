@@ -13,12 +13,22 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "copy-with-context.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
+        {
+            "command": "contextCopy.copySelection",
+            "title": "Copy Selection with Context",
+            "category": "Context Copy"
+        }
+    ],
+    "menus": {
+        "explorer/context": [
+            {
+                "command": "contextCopy.copySelection",
+                "when": "explorerResourceIsToFile || explorerResourceIsFolder",
+                "group": "navigation@6"
+            }
+        ]
+    }
+},
   "scripts": {
     "vscode:prepublish": "pnpm run package",
     "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
