@@ -5,16 +5,37 @@ export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 // Set of common binary file extensions (lowercase) for efficient lookup
 export const BINARY_FILE_EXTENSIONS: ReadonlySet<string> = new Set([
-    '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.ico', // Images
-    '.pdf',
-    '.zip', '.tar', '.gz', '.7z', '.rar', // Archives
-    '.exe', '.dll', '.so', '.a', '.o', // Executables/Libraries
-    '.woff', '.woff2', '.ttf', '.otf', '.eot', // Fonts
-    '.mp3', '.wav', '.ogg', '.mp4', '.mov', '.avi', '.webm', // Media
-    '.class', // Java bytecode
-    '.pyc', // Python bytecode
-    '.DS_Store' // macOS metadata
+    // Images & Design Assets
+    '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.ico',
+    '.psd', '.ai', '.xd', '.sketch',
+
+    // Archives & Packages
+    '.zip', '.tar', '.gz', '.7z', '.rar', '.jar', '.apk', '.aab', '.nupkg',
+
+    // Executables & Libraries
+    '.exe', '.dll', '.so', '.a', '.o', '.obj', '.lib', '.node', '.out', '.msi', '.dmg', '.app',
+
+    // Fonts
+    '.woff', '.woff2', '.ttf', '.otf', '.eot', '.ttc',
+
+    // Media (Audio/Video)
+    '.mp3', '.wav', '.ogg', '.mp4', '.mov', '.avi', '.webm',
+
+    // Bytecode / Compiled Files
+    '.class', '.dex', '.pyc', '.pyo', '.pyd', '.rbc', '.beam', '.elc',
+
+    // Databases & Binary Data
+    '.db', '.sqlite', '.bin', '.pdb',
+
+    // Temporary / System / Metadata
+    '.log', '.bak', '.tmp', '.temp', '.swp', '.swo', '.DS_Store', '.thumbs', '.lock', '.crdownload', '.part',
+
+    // Application Bundles / Installers
+    '.vsix', '.msi', '.app', '.dmg', '.pkg', '.snap', '.flatpak',
+    '.deb', '.rpm', '.apk', '.aab', '.appx', '.xapk',
+    '.egg', '.whl', '.crate'
 ]);
+
 
 // Separator between formatted file blocks in the final output
 export const FILE_SEPARATOR = '\n\n';
