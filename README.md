@@ -48,7 +48,7 @@ Effortlessly copy the content of multiple files and entire folders from the VS C
 *   Currently, no known issues. Please report any bugs!
 
 ## Future Roadmap
- - Allow custom block lists for files/fodlers you do not want to  copy
+ - Allow custom block lists for files/folders you do not want to  copy
 
 ## Contributing
 

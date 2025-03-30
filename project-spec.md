@@ -135,3 +135,4 @@ When triggered, the extension should gather the selected files’ contents and c
 -   Follow VS Code API best practices (activation events, disposables, async operations).
 
 --- End of Project Specification ---
+
