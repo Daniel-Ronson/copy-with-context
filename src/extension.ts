@@ -17,20 +17,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log('"context-copy" extension is now active!');
 
-    // Register the command specified in package.json
-	const disposable = vscode.commands.registerCommand('copy-with-context.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('HI! Hello World from Copy With Context!');
-	});
-
     const copyCommandDisposable = vscode.commands.registerCommand(
         COMMAND_ID,
         (uri: vscode.Uri, allUris: vscode.Uri[]) => copySelectionWithContextCommand(uri, allUris, statusBarItem)
     );
     // Add the command disposable to the context's subscriptions
     context.subscriptions.push(copyCommandDisposable);
-    context.subscriptions.push(disposable);
 }
 
 // This method is called when your extension is deactivated
