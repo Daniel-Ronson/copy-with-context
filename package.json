@@ -1,7 +1,7 @@
 {
   "name": "copy-with-context",
-  "displayName": "Copy With Context",
-  "publisher": "Daniel Ronson",
+  "displayName": "Copy to LLM Context",
+  "publisher": "copy-context",
   "description": "Copy files with llm friendly formatting",
   "version": "0.0.1",
   "engines": {
@@ -14,10 +14,6 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "copy-with-context.helloWorld",
-        "title": "Hello World"
-      },
       {
         "command": "contextCopy.copySelectionWithContextCommand",
         "title": "Context Copy llm friendly formatting"
