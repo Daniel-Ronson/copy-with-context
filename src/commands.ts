@@ -32,6 +32,11 @@ async function processUri(uri: vscode.Uri): Promise<ProcessedFile> {
         const stats = await vscode.workspace.fs.stat(uri);
         const relativePath = getRelativePath(uri); // Get relative path early for reporting
 
+        // if its directory, skipped_directory
+        if (stats.type === vscode.FileType.Directory) {
+            return { uri, relativePath, status: 'skipped_directory' };
+        }
+
         // if EXCLUDED_FILES_PATTERN contains the filename, skipped_ignored
         if (EXCLUDED_FILENAMES.has(path.basename(uri.fsPath))) {
             return { uri, relativePath, status: 'skipped_ignored' };
@@ -78,6 +83,10 @@ async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise
         try {
             const stats = await vscode.workspace.fs.stat(uri);
             if (stats.type === vscode.FileType.Directory) {
+                // if directory is in the EXCLUDED_FILENAMES, skip it
+                if (EXCLUDED_FILENAMES.has(path.basename(uri.fsPath))) {
+                    continue;
+                }
                 // If it's a directory, find files within it
                 const promise = vscode.workspace.findFiles(
                     new vscode.RelativePattern(uri, '**/*'),

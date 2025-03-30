@@ -1,4 +1,3 @@
-// filename: src/test/suite/extension.test.ts
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 // import * as myExtension from '../../extension'; // Import your extension code if needed for direct testing

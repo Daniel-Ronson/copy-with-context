@@ -66,10 +66,7 @@ export const EXCLUDED_ITEMS: ReadonlyArray<string> = [
  * For items with slashes: excludes according to the specific path pattern
  */
 function buildExcludeGlob(excludeList: ReadonlyArray<string>): string {
-    const patterns = excludeList.map(item => {
-        // If it's a simple name (no slash), exclude it anywhere
-        return `**/${item}`;
-    });
+    const patterns = excludeList.map(item => `**/${item},**/${item}/**`);
     return `{${patterns.join(',')}}`;
 }
 

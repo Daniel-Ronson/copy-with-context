@@ -1,4 +1,3 @@
-// filename: src/fileProcessor.ts
 // Contains the logic to handle a single file URI.
 
 import * as vscode from 'vscode';

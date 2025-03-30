@@ -1,5 +1,3 @@
-// src/utils/formattingUtils.ts
-
 /**
  * Formats the file path and content into the specified code-fenced block.
  * ```[<relative/path/to/file>]

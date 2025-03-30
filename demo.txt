@@ -1,0 +1,193 @@
+```[src/utils/fileUtils.ts]
+// src/utils/fileUtils.ts
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { TextDecoder } from 'util'; // Node.js built-in
+import { BINARY_FILE_EXTENSIONS, MAX_FILE_SIZE_BYTES } from '../constants';
+
+/**
+ * Checks if a file path likely points to a binary file based on its extension.
+ * @param filePath The full file path.
+ * @returns True if the extension is in the BINARY_FILE_EXTENSIONS set, false otherwise.
+ */
+export function isBinaryFile(filePath: string): boolean {
+    const extension = path.extname(filePath).toLowerCase();
+    return BINARY_FILE_EXTENSIONS.has(extension);
+}
+
+/**
+ * Checks if a file exceeds the maximum allowed size.
+ * @param stats vscode.FileStat object containing file metadata.
+ * @returns True if the file size exceeds MAX_FILE_SIZE_BYTES, false otherwise.
+ */
+export function isLargeFile(stats: vscode.FileStat): boolean {
+    return stats.size > MAX_FILE_SIZE_BYTES;
+}
+
+/**
+ * Reads the content of a file URI as UTF-8 text.
+ * @param uri The vscode.Uri of the file to read.
+ * @returns The file content as a string, or null if reading fails.
+ */
+export async function readFileContent(uri: vscode.Uri): Promise<string | null> {
+    try {
+        const uint8Array = await vscode.workspace.fs.readFile(uri);
+        // Node's TextDecoder is readily available in the extension host environment
+        const decoder = new TextDecoder('utf-8');
+        return decoder.decode(uint8Array);
+    } catch (error) {
+        console.error(`Error reading file ${uri.fsPath}:`, error);
+        return null; // Return null to indicate failure
+    }
+}
+
+/**
+ * Gets the relative path of a URI with respect to the workspace folder.
+ * Handles multi-root workspaces by choosing the most relevant workspace folder.
+ * @param uri The vscode.Uri of the file.
+ * @returns The relative path string.
+ */
+export function getRelativePath(uri: vscode.Uri): string {
+    // workspace.asRelativePath handles finding the correct workspace folder.
+    // The second argument `false` prevents adding './' for files in the root.
+    const relativePath = vscode.workspace.asRelativePath(uri, false);
+
+    // Normalize path separators for consistency (e.g., convert Windows '\' to '/')
+    return relativePath.split(path.sep).join(path.posix.sep);
+}
+```
+
+```[src/utils/formattingUtils.ts]
+/**
+ * Formats the file path and content into the specified code-fenced block.
+ * ```[<relative/path/to/file>]
+ * <file-content>
+ * ```
+ * @param relativePath The relative path of the file.
+ * @param content The content of the file.
+ * @returns The formatted string block.
+ */
+export function formatFileContentBlock(relativePath: string, content: string): string {
+    // Ensure the path doesn't contain characters that might break the fence or markdown
+    const cleanPath = relativePath.replace(/`/g, ''); // Basic sanitization for backticks in path
+
+    return `\`\`\`[${cleanPath}]\n${content}\n\`\`\``;
+}
+```
+
+```[src/utils/gitignoreUtils.ts]
+import * as vscode from 'vscode';
+import * as path from 'path';
+
+/**
+ * Reads the .gitignore file and returns an array of glob patterns
+ * @returns Array of glob patterns from .gitignore, or empty array if no .gitignore found
+ */
+export async function getGitignorePatterns(): Promise<string[]> {
+    try {
+        // Try to find .gitignore in the first workspace folder
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            return [];
+        }
+
+        const gitignorePath = path.join(workspaceFolder.uri.fsPath, '.gitignore');
+        const gitignoreUri = vscode.Uri.file(gitignorePath);
+
+        // Read the .gitignore file
+        const content = await vscode.workspace.fs.readFile(gitignoreUri);
+        const text = Buffer.from(content).toString('utf8');
+
+        // Parse the patterns
+        return text
+            .split('\n')
+            .map(line => line.trim())
+            // Remove comments and empty lines
+            .filter(line => line && !line.startsWith('#'))
+            // Convert .gitignore patterns to glob patterns
+            .map(pattern => {
+                // Remove any leading ./
+                pattern = pattern.replace(/^\.\//, '');
+                
+                // If pattern starts with /, it matches from the root
+                if (pattern.startsWith('/')) {
+                    pattern = pattern.slice(1);
+                }
+
+                // If pattern ends with /, it's a directory
+                if (pattern.endsWith('/')) {
+                    pattern = pattern + '**';
+                }
+
+                // If pattern doesn't include a slash, match it anywhere
+                if (!pattern.includes('/')) {
+                    pattern = `**/${pattern}`;
+                }
+
+                // Add ** suffix for directories if not already present
+                if (!pattern.endsWith('**')) {
+                    pattern = `${pattern}/**`;
+                }
+
+                return pattern;
+            });
+    } catch (error) {
+        // If .gitignore doesn't exist or can't be read, return empty array
+        console.log('No .gitignore found or error reading it:', error);
+        return [];
+    }
+} 
+```
+
+```[src/utils/statusBarUtils.ts]
+import * as vscode from 'vscode';
+
+let currentTimeout: NodeJS.Timeout | undefined;
+
+/**
+ * Shows a message in the status bar that automatically hides after a specified duration.
+ * If called while a previous message is showing, the previous message is cleared.
+ * @param statusBarItem The status bar item to use for displaying the message
+ * @param message The message to display (without icon prefix)
+ * @param durationMs How long to show the message (in milliseconds), defaults to 2500
+ * @returns void
+ */
+export function showTemporaryStatusBarMessage(
+    statusBarItem: vscode.StatusBarItem | undefined,
+    message: string,
+    durationMs: number = 5000
+): void {
+    try {
+        // If no status bar item provided, fall back to window notification
+        if (!statusBarItem) {
+            vscode.window.showInformationMessage(message);
+            return;
+        }
+
+        // Clear any existing timeout
+        if (currentTimeout) {
+            clearTimeout(currentTimeout);
+        }
+
+        // Set the text with a checkmark icon
+        statusBarItem.text = `$(check) ${message}`;
+        statusBarItem.show();
+
+        // Schedule hiding
+        currentTimeout = setTimeout(() => {
+            try {
+                if (statusBarItem) {
+                    statusBarItem.hide();
+                }
+            } catch (error) {
+                console.warn('Error hiding status bar item:', error);
+            }
+            currentTimeout = undefined;
+        }, durationMs);
+    } catch (error) {
+        // If status bar operations fail, fall back to window notification do nothing
+        // log to dev debug console
+        console.debug('Error showing copy-contextstatus bar message:', error);
+    }
+} 
+```

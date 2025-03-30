@@ -1,4 +1,3 @@
-// filename: src/extension.ts
 import * as vscode from 'vscode';
 import { copySelectionWithContextCommand } from './commands';
 import { COMMAND_ID } from './constants';

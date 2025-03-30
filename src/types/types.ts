@@ -1,4 +1,3 @@
-// filename: src/types.ts
 import * as vscode from 'vscode';
 
 /**
