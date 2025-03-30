@@ -57,7 +57,8 @@ export const EXCLUDED_ITEMS: ReadonlyArray<string> = [
     'dist',
     '.env',
     '.vercel',
-    '.next'
+    '.next',
+    '.vscode-test'
 ] as const;
 
 /**
