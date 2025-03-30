@@ -58,7 +58,7 @@ When triggered, the extension should gather the selected files’ contents and c
 
 2.  **Command Implementation**
     1.  Retrieve the list of selected resource **URIs** from the command arguments.
-    2.  **Filter out directories:** Ignore any URIs that represent folders.
+    2.  Copy contents of all files within folders selected. If some files + same folder is selected, then select all the files in that folders with no duplicates.
     3.  Initialize empty lists/arrays for successful content blocks and skipped file paths.
     4.  For each file URI:
         *   Compute the **relative path** using `vscode.workspace.asRelativePath()`.
