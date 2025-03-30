@@ -5,15 +5,20 @@ import {
     WARNING_PREFIX,
     SUCCESS_PREFIX,
     INFO_PREFIX,
-    MAX_SKIPPED_FILES_TO_LIST
+    MAX_SKIPPED_FILES_TO_LIST,
+    EXCLUDED_FILES_PATTERN_GLOB,
+    EXCLUDED_FILENAMES,
+    MAX_FILES_TO_RECURSIVELY_GET
 } from './constants';
 import { isBinaryFile, isLargeFile, readFileContent, getRelativePath } from './utils/fileUtils';
 import { formatFileContentBlock } from './utils/formattingUtils';
+import * as path from 'path'; // Ensure path is imported if needed elsewhere, though not strictly for this change
+import { showTemporaryStatusBarMessage } from './utils/statusBarUtils';
 
 interface ProcessedFile {
     uri: vscode.Uri;
     relativePath: string;
-    status: 'ok' | 'skipped_binary' | 'skipped_large' | 'skipped_read_error' | 'skipped_directory';
+    status: 'ok' | 'skipped_binary' | 'skipped_large' | 'skipped_read_error' | 'skipped_directory' | 'skipped_ignored';
     content?: string; // Only present if status is 'ok'
 }
 
@@ -27,8 +32,9 @@ async function processUri(uri: vscode.Uri): Promise<ProcessedFile> {
         const stats = await vscode.workspace.fs.stat(uri);
         const relativePath = getRelativePath(uri); // Get relative path early for reporting
 
-        if (stats.type === vscode.FileType.Directory) {
-            return { uri, relativePath, status: 'skipped_directory' };
+        // if EXCLUDED_FILES_PATTERN contains the filename, skipped_ignored
+        if (EXCLUDED_FILENAMES.has(path.basename(uri.fsPath))) {
+            return { uri, relativePath, status: 'skipped_ignored' };
         }
 
         if (isBinaryFile(uri.fsPath)) {
@@ -59,27 +65,85 @@ async function processUri(uri: vscode.Uri): Promise<ProcessedFile> {
 }
 
 /**
+ * Takes an array of selected URIs (files and folders) and returns a deduplicated
+ * list of only the file URIs, expanding any selected folders.
+ * @param selections Array of URIs from the explorer selection.
+ * @returns A Promise resolving to an array of unique file URIs.
+ */
+async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise<vscode.Uri[]> {
+    const uniqueFileUrisMap = new Map<string, vscode.Uri>();
+    const folderExpansionPromises: Promise<void>[] = [];
+
+    for (const uri of selections) {
+        try {
+            const stats = await vscode.workspace.fs.stat(uri);
+            if (stats.type === vscode.FileType.Directory) {
+                // If it's a directory, find files within it
+                const promise = vscode.workspace.findFiles(
+                    new vscode.RelativePattern(uri, '**/*'),
+                    EXCLUDED_FILES_PATTERN_GLOB,
+                    MAX_FILES_TO_RECURSIVELY_GET
+                ).then(filesInDir => {
+                    // Add files found in the directory to the map
+                    filesInDir.forEach(fileUri => {
+                        uniqueFileUrisMap.set(fileUri.fsPath, fileUri);
+                    });
+                });
+                // Wrap the PromiseLike in Promise.resolve() to fix type mismatch
+                folderExpansionPromises.push(Promise.resolve(promise));
+            } else if (stats.type === vscode.FileType.File) {
+                // If it's a file, add it directly
+                uniqueFileUrisMap.set(uri.fsPath, uri);
+            }
+            // Ignore other types like SymbolicLink, Unknown
+        } catch (error) {
+            console.warn(`Could not process ${uri.fsPath} during selection expansion:`, error);
+        }
+    }
+
+    // Wait for all folder expansions to complete
+    await Promise.all(folderExpansionPromises);
+
+    // Return the unique file URIs as an array
+    return Array.from(uniqueFileUrisMap.values());
+}
+
+/**
  * The command handler for "Context Copy: Copy Selection with Context".
- * Gathers selected files, filters, reads, formats, and copies to clipboard.
+ * Gathers selected files/folders, expands folders, filters, reads, formats, and copies to clipboard.
  * Shows appropriate notifications.
  *
  * @param _contextSelection The URI of the item right-clicked (often undefined for multi-select).
  * @param allSelections An array of all selected URIs in the explorer.
+ * @param statusBarItem The status bar item to use for showing success messages.
  */
 export async function copySelectionWithContextCommand(
     _contextSelection: vscode.Uri | undefined,
-    allSelections: vscode.Uri[] | undefined
+    allSelections: vscode.Uri[] | undefined,
+    statusBarItem: vscode.StatusBarItem
 ): Promise<void> {
 
     if (!allSelections || allSelections.length === 0) {
-        vscode.window.showInformationMessage(`${INFO_PREFIX}No files or folders selected.`);
+        let tempMessage = `${INFO_PREFIX}No files or folders selected`;
+        showTemporaryStatusBarMessage(statusBarItem, tempMessage);
+
         return;
     }
 
-    // Process all selected URIs concurrently
-    const processingPromises = allSelections.map(uri => processUri(uri));
+    // --- Step 1: Get unique file URIs from the selection ---    
+    const uniqueFileUris = await getUniqueFileUrisFromSelection(allSelections);
+
+    if (uniqueFileUris.length === 0) {
+        let tempMessage = `${INFO_PREFIX}No valid files found`;
+        showTemporaryStatusBarMessage(statusBarItem, tempMessage);
+        return;
+    }
+
+    // --- Step 2: Process the unique file URIs --- 
+    const processingPromises = uniqueFileUris.map(uri => processUri(uri));
     const results = await Promise.all(processingPromises);
 
+    // --- Step 3: Separate successful and skipped files --- 
     const successfulFiles: ProcessedFile[] = [];
     const skippedFiles: ProcessedFile[] = [];
 
@@ -94,11 +158,11 @@ export async function copySelectionWithContextCommand(
     });
 
     if (successfulFiles.length === 0) {
-        let message = `${INFO_PREFIX}No valid text files found in selection to copy.`;
+        let tempMessage = `${INFO_PREFIX}No valid text files found in selection to copy.`;
         if (skippedFiles.length > 0) {
-             message += ` Skipped ${skippedFiles.length} file(s) due to size, type, or errors.`;
+            tempMessage += ` Skipped ${skippedFiles.length} file(s) due to size, type, or errors.`;
         }
-        vscode.window.showWarningMessage(message);
+        showTemporaryStatusBarMessage(statusBarItem, tempMessage);
         return;
     }
 
@@ -111,9 +175,9 @@ export async function copySelectionWithContextCommand(
     const finalContent = formattedBlocks.join(FILE_SEPARATOR);
     await vscode.env.clipboard.writeText(finalContent);
 
-    // Show success message
-    const successMsg = `${SUCCESS_PREFIX}Copied content of ${successfulFiles.length} file(s) to clipboard.`;
-    vscode.window.showInformationMessage(successMsg); // Use info for success
+    // Show success message in status bar
+    const successMsg = `Copied content of ${successfulFiles.length} file(s) to clipboard`;
+    showTemporaryStatusBarMessage(statusBarItem, successMsg);
 
     // Show warning message if any files were skipped
     if (skippedFiles.length > 0) {
@@ -121,7 +185,7 @@ export async function copySelectionWithContextCommand(
         const listedPaths = skippedPaths.slice(0, MAX_SKIPPED_FILES_TO_LIST).join(', ');
         const ellipsis = skippedPaths.length > MAX_SKIPPED_FILES_TO_LIST ? '...' : '';
 
-        const reasonCounts: Record<string, number> = { large: 0, binary: 0, error: 0 };
+        const reasonCounts: Record<string, number> = { large: 0, binary: 0, error: 0 , ignored: 0};
         skippedFiles.forEach(f => {
             if (f.status === 'skipped_large')
                 {
@@ -134,6 +198,10 @@ export async function copySelectionWithContextCommand(
             else if (f.status === 'skipped_read_error')
                 {
                      reasonCounts.error++;
+                }
+            else if (f.status === 'skipped_ignored')
+                {
+                    reasonCounts.ignored++;
                 }
         });
 
