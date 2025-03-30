@@ -3,7 +3,8 @@
   "displayName": "Copy to LLM Context",
   "publisher": "copy-context",
   "description": "Copy files with llm friendly formatting",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "icon" : "public/copy-context-icon.png",
   "engines": {
     "vscode": "^1.98.0"
   },
