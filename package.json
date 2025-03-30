@@ -13,22 +13,25 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-        {
-            "command": "contextCopy.copySelection",
-            "title": "Copy Selection with Context",
-            "category": "Context Copy"
-        }
+      {
+        "command": "copy-with-context.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "contextCopy.copySelectionWithContextCommand",
+        "title": "Context Copy llm friendly formatting"
+      }
     ],
     "menus": {
-        "explorer/context": [
-            {
-                "command": "contextCopy.copySelection",
-                "when": "explorerResourceIsToFile || explorerResourceIsFolder",
-                "group": "navigation@6"
-            }
-        ]
+      "explorer/context": [
+        {
+          "command": "contextCopy.copySelectionWithContextCommand",
+            "when": "explorerViewletVisible",
+          "group": "6_cutcopypaste@3"
+        }
+      ]
     }
-},
+  },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
     "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
@@ -44,16 +47,16 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.98.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
+    "@types/node": "~20.17.28",
+    "@types/vscode": "^1.98.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
-    "eslint": "^9.23.0",
-    "esbuild": "^0.25.1",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.2",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.23.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.2"
   }
 }

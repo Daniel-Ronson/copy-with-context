@@ -17,10 +17,30 @@ export const BINARY_FILE_EXTENSIONS: ReadonlySet<string> = new Set([
 ]);
 
 // Separator between formatted file blocks in the final output
-export const OUTPUT_SEPARATOR = '\n\n';
+export const FILE_SEPARATOR = '\n\n';
 
 // Command ID registered in package.json
-export const COMMAND_ID = 'contextCopy.copySelection';
+export const COMMAND_ID = 'contextCopy.copySelectionWithContextCommand';
 
 // User-facing extension name for messages
 export const EXTENSION_NAME = 'Context Copy';
+
+/**
+ * Prefix for the warning message shown when files are skipped.
+ */
+export const WARNING_PREFIX = 'Context Copy: ';
+
+/**
+ * Prefix for the success message shown after copying.
+ */
+export const SUCCESS_PREFIX = 'Context Copy: ';
+
+/**
+ * Prefix for the info message shown when no valid files are found.
+ */
+export const INFO_PREFIX = 'Context Copy: ';
+
+/**
+ * Maximum number of skipped filenames to list in the warning message.
+ */
+export const MAX_SKIPPED_FILES_TO_LIST = 5;
