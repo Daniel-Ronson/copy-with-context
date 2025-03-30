@@ -9,13 +9,13 @@
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
+			"preLaunchTask": "watch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
-			],
-			"preLaunchTask": "${defaultBuildTask}"
-		}
+			]
+				}
 	]
 }

@@ -1,64 +1,84 @@
-// See https://go.microsoft.com/fwlink/?LinkId=733558
-// for the documentation about the tasks.json format
+// .vscode/tasks.json
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-            "label": "watch",
-            "dependsOn": [
-                "npm: watch:tsc",
-                "npm: watch:esbuild"
-            ],
-            "presentation": {
-                "reveal": "never"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+    "version": "2.0.0",
+    "tasks": [
+      {
+        // 1. The main watch label
+        // Runs watch:tsc and watch:esbuild in parallel
+        "label": "watch",
+        "dependsOn": [
+          "npm: watch:tsc",
+          "npm: watch:esbuild"
+        ],
+        // This ensures we don't clutter the Terminal panel
+        "presentation": {
+          "reveal": "never"
         },
-        {
-            "type": "npm",
-            "script": "watch:esbuild",
-            "group": "build",
-            "problemMatcher": "$esbuild-watch",
-            "isBackground": true,
-            "label": "npm: watch:esbuild",
-            "presentation": {
-                "group": "watch",
-                "reveal": "never"
-            }
+        "group": {
+          // Marking this as our build group
+          "kind": "build",
+          "isDefault": true
+        }
+      },
+      {
+        // 2. Watch ESBuild
+        // This calls "watch:esbuild" from package.json
+        "type": "npm",
+        "script": "watch:esbuild",
+        "group": "build",
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "esbuild",
+          "pattern": {
+            "regexp": "no-match"  // dummy regex to make VS Code happy
+          },
+          "background": {
+            "beginsPattern": "\\[watch\\] build started",
+            "endsPattern": "\\[watch\\] build finished"
+          }
         },
-		{
-            "type": "npm",
-            "script": "watch:tsc",
-            "group": "build",
-            "problemMatcher": "$tsc-watch",
-            "isBackground": true,
-            "label": "npm: watch:tsc",
-            "presentation": {
-                "group": "watch",
-                "reveal": "never"
-            }
+        "label": "npm: watch:esbuild",
+        "presentation": {
+          "group": "watch",
+          "reveal": "never"
+        }
+      },
+      {
+        // 3. Watch TSC
+        // This calls "watch:tsc" from package.json
+        "type": "npm",
+        "script": "watch:tsc",
+        "group": "build",
+        "problemMatcher": "$tsc-watch",
+        "isBackground": true,
+        "label": "npm: watch:tsc",
+        "presentation": {
+          "group": "watch",
+          "reveal": "never"
+        }
+      },
+      {
+        // 4. Watch tests only
+        "type": "npm",
+        "script": "watch-tests",
+        "problemMatcher": "$tsc-watch",
+        "isBackground": true,
+        "presentation": {
+          "reveal": "never",
+          "group": "watchers"
         },
-		{
-			"type": "npm",
-			"script": "watch-tests",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": "build"
-		},
-		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
-			"problemMatcher": []
-		}
-	]
-}
+        "group": "build"
+      },
+      {
+        // 5. Combined watch-tests label if you want to watch both
+        // the main tasks and tests at once
+        "label": "tasks: watch-tests",
+        "dependsOn": [
+          "npm: watch",
+          "npm: watch-tests"
+        ],
+        "problemMatcher": []
+      }
+    ]
+  }
+  
