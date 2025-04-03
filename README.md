@@ -22,9 +22,9 @@ Effortlessly copy the content of multiple files and entire folders from the VS C
     ```
     ````
 *   **Smart Filtering:**
-    *   Automatically skips (.env, images, archives, executables)
-    *   Automatically **skips excessively large files** (default > 5MB, configurable in code).
-*   **Avoid sensitive files:** Sensitive files such as .env are never copied to clipboard.
+    *   **skips** .env | binary files | images/videos | archives
+    *   **skips excessively large files** (files > 5MB not copied).
+*   **Avoid sensitive files:** .env file is never copied to clipboard.
 
 ## Usage
 1.  Select one or more files/folders in vscode menu explorer.
@@ -44,7 +44,6 @@ Effortlessly copy the content of multiple files and entire folders from the VS C
     '.next'````
 
 ## Known Issues
-
 *   Currently, no known issues. Please report any bugs!
 
 ## Future Roadmap

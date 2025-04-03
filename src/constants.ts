@@ -40,8 +40,9 @@ export const BINARY_FILE_EXTENSIONS: ReadonlySet<string> = new Set([
 // Separator between formatted file blocks in the final output
 export const FILE_SEPARATOR = '\n\n';
 
-// Command ID registered in package.json
+// Command IDs registered in package.json
 export const COMMAND_ID = 'contextCopy.copySelectionWithContextCommand';
+export const SELECTED_CODE_COMMAND_ID = 'contextCopy.copySelectedCodeWithContextCommand';
 
 // User-facing extension name for messages
 export const EXTENSION_NAME = 'Context Copy';

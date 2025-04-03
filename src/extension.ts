@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { copySelectionWithContextCommand } from './commands';
-import { COMMAND_ID } from './constants';
+import { copySelectionWithContextCommand, copySelectedCodeWithContextCommand } from './commands';
+import { COMMAND_ID, SELECTED_CODE_COMMAND_ID } from './constants';
 
 // Status bar item for showing temporary messages
 let statusBarItem: vscode.StatusBarItem;
@@ -17,12 +17,19 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log('"context-copy" extension is now active!');
 
+    // Register the file selection copy command
     const copyCommandDisposable = vscode.commands.registerCommand(
         COMMAND_ID,
         (uri: vscode.Uri, allUris: vscode.Uri[]) => copySelectionWithContextCommand(uri, allUris, statusBarItem)
     );
-    // Add the command disposable to the context's subscriptions
     context.subscriptions.push(copyCommandDisposable);
+
+    // Register the selected code copy command
+    const selectedCodeCommandDisposable = vscode.commands.registerCommand(
+        SELECTED_CODE_COMMAND_ID,
+        () => copySelectedCodeWithContextCommand(statusBarItem)
+    );
+    context.subscriptions.push(selectedCodeCommandDisposable);
 }
 
 // This method is called when your extension is deactivated

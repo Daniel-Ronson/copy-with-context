@@ -11,7 +11,7 @@ import {
     MAX_FILES_TO_RECURSIVELY_GET
 } from './constants';
 import { isBinaryFile, isLargeFile, readFileContent, getRelativePath } from './utils/fileUtils';
-import { formatFileContentBlock } from './utils/formattingUtils';
+import { formatFileContentBlock, formatSelectedCodeBlock } from './utils/formattingUtils';
 import * as path from 'path'; // Ensure path is imported if needed elsewhere, though not strictly for this change
 import { showTemporaryStatusBarMessage } from './utils/statusBarUtils';
 
@@ -224,4 +224,34 @@ export async function copySelectionWithContextCommand(
         const warningMsg = `${WARNING_PREFIX}Skipped ${skippedFiles.length} file(s) (${reasonSummary}). Examples: ${listedPaths}${ellipsis}`;
         vscode.window.showWarningMessage(warningMsg);
     }
+}
+
+/**
+ * The command handler for copying selected code with context.
+ * Gets the active editor's selection, formats it with context, and copies to clipboard.
+ * Shows appropriate notifications.
+ *
+ * @param statusBarItem The status bar item to use for showing success messages.
+ */
+export async function copySelectedCodeWithContextCommand(
+    statusBarItem: vscode.StatusBarItem
+): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    
+    if (!editor) {
+        showTemporaryStatusBarMessage(statusBarItem, `${INFO_PREFIX}No active editor`);
+        return;
+    }
+
+    const selection = editor.selection;
+    
+    if (selection.isEmpty) {
+        showTemporaryStatusBarMessage(statusBarItem, `${INFO_PREFIX}No text selected`);
+        return;
+    }
+
+    const formattedBlock = formatSelectedCodeBlock(editor, selection);
+    await vscode.env.clipboard.writeText(formattedBlock);
+
+    showTemporaryStatusBarMessage(statusBarItem, `${SUCCESS_PREFIX}Copied selected code with context`);
 }
