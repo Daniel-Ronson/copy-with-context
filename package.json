@@ -55,6 +55,14 @@
       ],
       "commandPalette": [
         {
+          "command": "contextCopy.copySelectionWithContextCommand",
+          "when": "false"
+        },
+        {
+          "command": "contextCopy.copySelectedCodeWithContextCommand",
+          "when": "false"
+        },
+        {
           "command": "contextCopy.editExcludedPaths",
           "when": "editorFocus || explorerViewletVisible"
         }
