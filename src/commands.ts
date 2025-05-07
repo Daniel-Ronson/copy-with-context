@@ -6,8 +6,8 @@ import {
     SUCCESS_PREFIX,
     INFO_PREFIX,
     MAX_SKIPPED_FILES_TO_LIST,
-    EXCLUDED_FILES_PATTERN_GLOB,
-    EXCLUDED_FILENAMES,
+    getExcludedFilesPatternGlob,
+    getExcludedFilenames,
     MAX_FILES_TO_RECURSIVELY_GET
 } from './constants';
 import { isBinaryFile, isLargeFile, readFileContent, getRelativePath } from './utils/fileUtils';
@@ -37,8 +37,8 @@ async function processUri(uri: vscode.Uri): Promise<ProcessedFile> {
             return { uri, relativePath, status: 'skipped_directory' };
         }
 
-        // if EXCLUDED_FILES_PATTERN contains the filename, skipped_ignored
-        if (EXCLUDED_FILENAMES.has(path.basename(uri.fsPath))) {
+        // Check if the file is in the excluded list
+        if (getExcludedFilenames().has(path.basename(uri.fsPath))) {
             return { uri, relativePath, status: 'skipped_ignored' };
         }
 
@@ -78,19 +78,20 @@ async function processUri(uri: vscode.Uri): Promise<ProcessedFile> {
 async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise<vscode.Uri[]> {
     const uniqueFileUrisMap = new Map<string, vscode.Uri>();
     const folderExpansionPromises: Promise<void>[] = [];
+    const excludedFilenames = getExcludedFilenames();
 
     for (const uri of selections) {
         try {
             const stats = await vscode.workspace.fs.stat(uri);
             if (stats.type === vscode.FileType.Directory) {
-                // if directory is in the EXCLUDED_FILENAMES, skip it
-                if (EXCLUDED_FILENAMES.has(path.basename(uri.fsPath))) {
+                // If directory is in the excluded filenames, skip it
+                if (excludedFilenames.has(path.basename(uri.fsPath))) {
                     continue;
                 }
                 // If it's a directory, find files within it
                 const promise = vscode.workspace.findFiles(
                     new vscode.RelativePattern(uri, '**/*'),
-                    EXCLUDED_FILES_PATTERN_GLOB,
+                    getExcludedFilesPatternGlob(),
                     MAX_FILES_TO_RECURSIVELY_GET
                 ).then(filesInDir => {
                     // Add files found in the directory to the map
@@ -101,8 +102,10 @@ async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise
                 // Wrap the PromiseLike in Promise.resolve() to fix type mismatch
                 folderExpansionPromises.push(Promise.resolve(promise));
             } else if (stats.type === vscode.FileType.File) {
-                // If it's a file, add it directly
-                uniqueFileUrisMap.set(uri.fsPath, uri);
+                // If it's a file and not excluded, add it directly
+                if (!excludedFilenames.has(path.basename(uri.fsPath))) {
+                    uniqueFileUrisMap.set(uri.fsPath, uri);
+                }
             }
             // Ignore other types like SymbolicLink, Unknown
         } catch (error) {
@@ -131,11 +134,12 @@ export async function copySelectionWithContextCommand(
     allSelections: vscode.Uri[] | undefined,
     statusBarItem: vscode.StatusBarItem
 ): Promise<void> {
+        // Give the UI thread a chance to update before potentially intensive operations
+    await new Promise(resolve => setTimeout(resolve, 10));
 
     if (!allSelections || allSelections.length === 0) {
         let tempMessage = `${INFO_PREFIX}No files or folders selected`;
         showTemporaryStatusBarMessage(statusBarItem, tempMessage);
-
         return;
     }
 
@@ -176,17 +180,24 @@ export async function copySelectionWithContextCommand(
     }
 
     // Format the content blocks for successful files
-    const formattedBlocks = successfulFiles.map(file =>
-        formatFileContentBlock(file.relativePath, file.content!) // content is guaranteed if status is 'ok'
-    );
+    const formattedBlocks = successfulFiles
+        .map(file => formatFileContentBlock(file.relativePath, file.content!))
+        .filter(block => block.length > 0); // Remove any empty blocks
 
-    // Join blocks and copy to clipboard
-    const finalContent = formattedBlocks.join(FILE_SEPARATOR);
-    await vscode.env.clipboard.writeText(finalContent);
+    // Only copy to clipboard if there are formatted blocks
+    if (formattedBlocks.length > 0) {
+        // Join blocks and copy to clipboard
+        const finalContent = formattedBlocks.join(FILE_SEPARATOR);
+        await vscode.env.clipboard.writeText(finalContent);
 
-    // Show success message in status bar
-    const successMsg = `Copied content of ${successfulFiles.length} file(s) to clipboard`;
-    showTemporaryStatusBarMessage(statusBarItem, successMsg);
+        // Show success message in status bar
+        const successMsg = `Copied content of ${formattedBlocks.length} file(s) to clipboard`;
+        showTemporaryStatusBarMessage(statusBarItem, successMsg);
+    } else {
+        // Show message that nothing was copied
+        let tempMessage = `${INFO_PREFIX}No content was copied to clipboard.`;
+        showTemporaryStatusBarMessage(statusBarItem, tempMessage);
+    }
 
     // Show warning message if any files were skipped
     if (skippedFiles.length > 0) {
