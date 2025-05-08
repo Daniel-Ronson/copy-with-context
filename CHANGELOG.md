@@ -6,4 +6,5 @@ All notable changes to the "copy-with-context" extension will be documented in t
 
 ### Added
 - Interactive UI for editing the excluded files/folders, use the=is feature from command pallete (shift+cmd+p) and look for "Copy Context: Edit Excluded Paths", this will open the quick pick dialogue to add/remove files
+- Reduced extension bundle size by 93%
 - Performance optimizations with caching of excluded paths

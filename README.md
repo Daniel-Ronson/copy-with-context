@@ -7,7 +7,7 @@ Effortlessly copy the content of multiple files and entire folders from the VS C
 **Copy files in a way that llms can easily understand by appending filenames, and having clear file boundaries.**
 
 ## Copy Files and Folders
-![Context Copy Demo](public/copy-demo.gif)
+![Context Copy Demo](public/gifs/copy-demo.gif)
 ## Features
 *   **Multi-Select Support:** Select any combination of files and folders.
 *   **Recursive Folder Processing:** Copies content from all valid text files within selected folders and their subdirectories.
@@ -38,14 +38,13 @@ Effortlessly copy the content of multiple files and entire folders from the VS C
 You can customize which files and folders are excluded from copying:
 
 1. Open the command palette (Ctrl+Shift+P / Cmd+Shift+P)
+![Context Copy Demo](public/gifs/quickpick-final.gif)
 2. Search for "Copy Context: Edit Excluded Paths"
 3. Use the dialog to manage exclusions:
    - **Enable/disable existing exclusions**: Click the toggle button to mark paths for removal
-   - **Add new exclusions**: Select "Add new exclusion..." and enter a path
-   - **Reset to defaults**: Select "Reset to defaults" to restore the original exclusion list
+   - **Add new exclusions**: Select "Add new exclusion..." and enter a filename or folder name
+   - **Reset to defaults**: Select "Restore to defaults" to restore the original exclusion list without changing your custom settings
    - **Finalize your changes**: Press Escape to close the dialog and apply all changes at once
-
-All changes (including reset to defaults) are staged until you close the dialog, allowing you to experiment with different configurations before committing. Default exclusions are clearly marked to help you identify custom vs. built-in settings.
 
 By default, the following paths are excluded:
 ```
