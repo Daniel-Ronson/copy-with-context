@@ -2,8 +2,8 @@
   "name": "copy-with-context",
   "displayName": "Copy to LLM Context",
   "publisher": "copy-context",
-  "description": "Copy files with llm friendly formatting",
-  "version": "1.5.0",
+  "description": "Copy files into llm context format. Copy Code to markdown like format with file name.",
+  "version": "1.5.1",
   "icon" : "public/copy-context-icon.png",
   "engines": {
     "vscode": "^1.75.0"
