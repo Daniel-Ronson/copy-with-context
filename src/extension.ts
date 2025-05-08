@@ -10,6 +10,7 @@ let statusBarItem: vscode.StatusBarItem;
  * Provides a simplified interface with staged changes that are only applied when dialog is closed
  */
 async function editExcludedPathsCommand() {
+    console.log('editExcludedPathsCommand invoked');
     // Get current configuration
     const config = vscode.workspace.getConfiguration('copyWithContext');
     const currentPaths = config.get<string[]>('excludedPaths', DEFAULT_EXCLUDED_ITEMS as string[]);
@@ -26,6 +27,11 @@ async function editExcludedPathsCommand() {
     // Track the visible item for maintaining scroll position
     let lastVisibleItemPath: string | null = null;
     
+    // String constants for button labels to ensure consistency
+    const LABEL_RESET_TO_DEFAULTS = '$(history) Restore defaults';
+    const LABEL_RESET_PENDING = '$(history) Add back original defaults (Pending)';
+    const LABEL_ADD_NEW = '$(add) Add new exclusion...';
+    
     // Helper: get all custom paths
     const getCustomPaths = () => stagedPaths.filter(path => !DEFAULT_EXCLUDED_ITEMS.includes(path as any));
     
@@ -36,11 +42,11 @@ async function editExcludedPathsCommand() {
     quickPick.ignoreFocusOut = true;
     
     // Add item for adding new exclusions - will be included in every refresh
-    const addNewLabel = '$(add) Add new exclusion...';
+    const addNewLabel = LABEL_ADD_NEW;
     
     // Add item for resetting to defaults
     const resetItem = {
-        label: '$(history) Reset to defaults',
+        label: LABEL_RESET_TO_DEFAULTS,
         description: 'Restore default exclusion paths',
         detail: 'Will reset to defaults when dialog is closed (click to cancel)',
         path: null,
@@ -215,11 +221,11 @@ async function editExcludedPathsCommand() {
         
         // Update reset item styling based on state
         resetItem.label = resetToDefaultsRequested 
-            ? '$(history) Reset to defaults (Pending)' 
-            : '$(history) Reset to defaults';
+            ? LABEL_RESET_PENDING 
+            : LABEL_RESET_TO_DEFAULTS;
         resetItem.detail = resetToDefaultsRequested
-            ? 'Will reset to defaults when dialog is closed (click to cancel)'
-            : 'Restore default exclusion paths';
+            ? 'Will add back original defaults when dialog is closed (click to cancel)'
+            : 'Restore default paths';
             
         // Create add new item that includes the current filter value if present
         const addItem = {
@@ -296,7 +302,9 @@ async function editExcludedPathsCommand() {
             }
             
             // Handle "Reset to defaults" option
-            if (selected.isSpecialAction && selected.label.includes('Reset to defaults')) {
+            if (selected.isSpecialAction && 
+                (selected.label === LABEL_RESET_TO_DEFAULTS || 
+                 selected.label === LABEL_RESET_PENDING)) {
                 // Remember the visible area before making changes
                 rememberVisibleItem();
                 
@@ -357,9 +365,11 @@ async function editExcludedPathsCommand() {
     quickPick.onDidHide(async () => {
         let finalPaths: string[] = [];
         if (resetToDefaultsRequested) {
-            // Keep all default paths, and any custom paths that are not in disabledPaths
+            // Keep default paths that weren't manually disabled
+            const defaultsToKeep = DEFAULT_EXCLUDED_ITEMS.filter(path => !disabledPaths.has(path as string));
+            // Keep custom paths that weren't disabled
             const customToKeep = getCustomPaths().filter(path => !disabledPaths.has(path));
-            finalPaths = [...DEFAULT_EXCLUDED_ITEMS as string[], ...customToKeep];
+            finalPaths = [...defaultsToKeep as string[], ...customToKeep];
         } else {
             finalPaths = stagedPaths.filter(path => !disabledPaths.has(path));
         }
