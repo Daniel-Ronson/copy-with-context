@@ -232,8 +232,7 @@ export async function copySelectionWithContextCommand(
         ].filter(Boolean).join(', ');
 
 
-        const warningMsg = `${WARNING_PREFIX}Skipped ${skippedFiles.length} file(s) (${reasonSummary}). Examples: ${listedPaths}${ellipsis}`;
-        vscode.window.showWarningMessage(warningMsg);
+        const warningMsg = `${WARNING_PREFIX}Skipped ${skippedFiles.length} file(s) (${reasonSummary}): ${listedPaths}${ellipsis}`;
     }
 }
 
