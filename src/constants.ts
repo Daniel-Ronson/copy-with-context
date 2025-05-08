@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as vscode from 'vscode';
 
 // File size limit: 5MB (adjust as needed)
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -68,11 +69,10 @@ export const INFO_PREFIX = 'Context Copy: ';
 export const MAX_SKIPPED_FILES_TO_LIST = 5;
 
 /**
- * List of files and directories to exclude when searching
- * Items without slashes are treated as file/directory names to exclude anywhere in the path
- * Items with slashes are treated as specific path patterns
+ * Default list of files and directories to exclude when searching
+ * This is used as a fallback if settings cannot be accessed
  */
-export const EXCLUDED_ITEMS: ReadonlyArray<string> = [
+export const DEFAULT_EXCLUDED_ITEMS: ReadonlyArray<string> = [
     '.git',
     'node_modules',
     'out',
@@ -82,6 +82,72 @@ export const EXCLUDED_ITEMS: ReadonlyArray<string> = [
     '.next',
     '.vscode-test'
 ] as const;
+
+// Cache storage for expensive operations
+interface ExclusionCache {
+    excludedItems: ReadonlyArray<string> | null;
+    excludedFilesPatternGlob: string | null;
+    excludedFilenames: ReadonlySet<string> | null;
+}
+
+// Initialize cache with null values
+const cache: ExclusionCache = {
+    excludedItems: null,
+    excludedFilesPatternGlob: null,
+    excludedFilenames: null
+};
+
+/**
+ * Initialize configuration watcher to invalidate cache when settings change
+ * Should be called from the extension's activate function
+ */
+export function initConfigWatcher(context: vscode.ExtensionContext): void {
+    // Add a listener for configuration changes
+    const configListener = vscode.workspace.onDidChangeConfiguration(event => {
+        // If the excluded paths setting changed, invalidate the cache
+        if (event.affectsConfiguration('copyWithContext.excludedPaths')) {
+            invalidateCache();
+        }
+    });
+    
+    // Register the listener for cleanup on deactivate
+    context.subscriptions.push(configListener);
+}
+
+/**
+ * Invalidate the cache when settings change
+ */
+export function invalidateCache(): void {
+    cache.excludedItems = null;
+    cache.excludedFilesPatternGlob = null;
+    cache.excludedFilenames = null;
+    }
+
+/**
+ * Get the current excluded items from user settings
+ * Falls back to DEFAULT_EXCLUDED_ITEMS if settings can't be accessed
+ * Uses cached value if available
+ */
+export function getExcludedItems(): ReadonlyArray<string> {
+    // Return cached value if available
+    if (cache.excludedItems !== null) {
+        return cache.excludedItems;
+    }
+
+    try {
+        const config = vscode.workspace.getConfiguration('copyWithContext');
+        const excludedItems = config.get('excludedPaths', DEFAULT_EXCLUDED_ITEMS) as ReadonlyArray<string>;
+        
+        // Cache the result
+        cache.excludedItems = excludedItems;
+        return excludedItems;
+    } catch (error) {
+        // If we can't access the configuration (e.g., during tests or initialization)
+        // fall back to the default excluded items
+        cache.excludedItems = DEFAULT_EXCLUDED_ITEMS;
+        return DEFAULT_EXCLUDED_ITEMS;
+    }
+}
 
 /**
  * Builds a glob pattern for excluding files and directories
@@ -93,10 +159,40 @@ function buildExcludeGlob(excludeList: ReadonlyArray<string>): string {
     return `{${patterns.join(',')}}`;
 }
 
-export const EXCLUDED_FILES_PATTERN_GLOB = buildExcludeGlob(EXCLUDED_ITEMS);
+/**
+ * Get the excluded files pattern glob based on current settings
+ * Uses cached value if available
+ */
+export function getExcludedFilesPatternGlob(): string {
+    // Return cached value if available
+    if (cache.excludedFilesPatternGlob !== null) {
+        return cache.excludedFilesPatternGlob;
+    }
 
-export const EXCLUDED_FILENAMES: ReadonlySet<string> = new Set(
-    EXCLUDED_ITEMS.map(item => path.basename(item)) // Extract only the filename from each path
-);
+    const glob = buildExcludeGlob(getExcludedItems());
+    
+    // Cache the result
+    cache.excludedFilesPatternGlob = glob;
+    return glob;
+}
 
-export const MAX_FILES_TO_RECURSIVELY_GET = 500;
+/**
+ * Get the excluded filenames set based on current settings
+ * Uses cached value if available
+ */
+export function getExcludedFilenames(): ReadonlySet<string> {
+    // Return cached value if available
+    if (cache.excludedFilenames !== null) {
+        return cache.excludedFilenames;
+    }
+
+    const filenames = new Set(
+        getExcludedItems().map(item => path.basename(item)) // Extract only the filename from each path
+    );
+    
+    // Cache the result
+    cache.excludedFilenames = filenames;
+    return filenames;
+}
+
+export const MAX_FILES_TO_RECURSIVELY_GET = 5000;

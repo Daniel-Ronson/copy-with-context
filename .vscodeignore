@@ -1,5 +1,6 @@
 .vscode/**
 .vscode-test/**
+.vscode-test.*
 out/**
 node_modules/**
 src/**
@@ -15,3 +16,12 @@ vsc-extension-quickstart.md
 **/*.js.map
 *.tsbuildinfo
 out/test/**
+.eslintrc.json
+.npmrc
+temp/**
+developer_readme.md
+project-spec.md
+demo.txt
+copy-with-context-*.vsix
+public/gifs/**
+.DS_Store

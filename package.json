@@ -3,7 +3,7 @@
   "displayName": "Copy to LLM Context",
   "publisher": "copy-context",
   "description": "Copy files with llm friendly formatting",
-  "version": "1.0.2",
+  "version": "1.5.0",
   "icon" : "public/copy-context-icon.png",
   "engines": {
     "vscode": "^1.75.0"
@@ -22,8 +22,22 @@
       {
         "command": "contextCopy.copySelectedCodeWithContextCommand",
         "title": "Copy Context: LLM friendly format"
+      },
+      {
+        "command": "contextCopy.editExcludedPaths",
+        "title": "Copy Context: Edit Excluded Paths"
       }
     ],
+    "configuration": {
+      "title": "Copy With Context",
+      "properties": {
+        "copyWithContext.excludedPaths": {
+          "type": "array",
+          "default": [".git", "node_modules", "out", "dist", ".env", ".vercel", ".next", ".vscode-test"],
+          "description": "Files and folders to exclude when copying context"
+        }
+      }
+    },
     "menus": {
       "explorer/context": [
         {
@@ -37,6 +51,20 @@
           "command": "contextCopy.copySelectedCodeWithContextCommand",
           "when": "editorHasSelection",
           "group": "copy@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "contextCopy.copySelectionWithContextCommand",
+          "when": "false"
+        },
+        {
+          "command": "contextCopy.copySelectedCodeWithContextCommand",
+          "when": "false"
+        },
+        {
+          "command": "contextCopy.editExcludedPaths",
+          "when": "editorFocus || explorerViewletVisible"
         }
       ]
     }
