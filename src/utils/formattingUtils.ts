@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-
+import { getMarkdownLanguage } from './fileUtils';
 
 /**
  * Formats the file path and content into the specified code-fenced block.
@@ -21,34 +21,33 @@ export function formatFileContentBlock(relativePath: string, content: string): s
     
     // Trim trailing newlines efficiently
     const trimmedContent = trimTrailingNewlines(content);
-    
-    return `\`\`\`[${cleanPath}]\n${trimmedContent}\n\`\`\``;
-}
+    const lang = getMarkdownLanguage(relativePath);
+    return `#### ${cleanPath}\n\`\`\`${lang}\n${trimmedContent}\n\`\`\``;
+    }
 
 /**
  * Formats selected code with context from the active editor.
  * @param editor The active text editor.
  * @param selection The selection to format.
+ * @param lineNumbers The line numbers of the selected code.
  * @returns The formatted string block with file path and selected code.
  */
-export function formatSelectedCodeBlock(editor: vscode.TextEditor, selection: vscode.Selection): string {
+export function formatSelectedCodeBlock(
+    editor: vscode.TextEditor,
+    selection: vscode.Selection,
+    lineNumbers: { start: number; end: number }
+): string {
     const document = editor.document;
     const relativePath = vscode.workspace.asRelativePath(document.uri, false);
     const selectedText = document.getText(selection);
-    
-    // Skip if the selected text is empty
     if (!selectedText.trim()) {
         return '';
     }
-        
-    // Clean the path to avoid breaking markdown
     const cleanPath = relativePath.replace(/`/g, '');
-    
-    // Trim trailing newlines efficiently
-    const trimmedText = trimTrailingNewlines(selectedText);
-    
-    return `\`\`\`[${cleanPath}]\n${trimmedText}\n\`\`\``;
-}
+    // Add line numbers to the header
+    const lineInfo = lineNumbers ? `(lines ${lineNumbers.start}-${lineNumbers.end})` : '';
+    const lang = getMarkdownLanguage(relativePath);
+    return `#### ${cleanPath} ${lineInfo}\n\`\`\`${lang}\n${selectedText}\n\`\`\``;}
 
 /**
  * Efficiently trims trailing whitespace from a string by working from the end.

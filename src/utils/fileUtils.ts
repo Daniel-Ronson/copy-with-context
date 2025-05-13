@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { TextDecoder } from 'util'; // Node.js built-in
 import { BINARY_FILE_EXTENSIONS, MAX_FILE_SIZE_BYTES } from '../constants';
-
+import { fileExtensionToMarkdown, specialFilenames } from '../types/extensionToMarkdownMapping';
 /**
  * Checks if a file path likely points to a binary file based on its extension.
  * @param filePath The full file path.
@@ -53,4 +53,19 @@ export function getRelativePath(uri: vscode.Uri): string {
 
     // Normalize path separators for consistency (e.g., convert Windows '\' to '/')
     return relativePath.split(path.sep).join(path.posix.sep);
+}
+
+export function getMarkdownLanguage(filePath: string): string {
+    const extension = path.extname(filePath);
+    if (extension && fileExtensionToMarkdown[extension]) {
+        return fileExtensionToMarkdown[extension];
+    }
+
+    // If there's no extension match, check if it's a special filename
+    const fileName = path.basename(filePath);
+    if (specialFilenames[fileName]) {
+        return specialFilenames[fileName];
+    }
+
+    return "text";
 }

@@ -5,6 +5,7 @@ import * as path from 'path';
 import { TextDecoder } from 'util'; // Node.js built-in
 import { MAX_FILE_SIZE_BYTES, BINARY_FILE_EXTENSIONS } from './constants';
 import { FileProcessResult } from './types/types';
+import { getMarkdownLanguage } from './utils/fileUtils';
 
 /**
  * Formats the file content with the specified code fence and relative path header.
@@ -15,7 +16,8 @@ import { FileProcessResult } from './types/types';
 function formatFileContent(relativePath: string, content: string): string {
     // Normalize path separators for display consistency (e.g., always use '/')
     const displayPath = relativePath.split(path.sep).join('/');
-    return `\`\`\`[${displayPath}]\n${content}\n\`\`\``;
+    const lang = getMarkdownLanguage(relativePath);
+    return `#### ${displayPath}\n\`\`\`${lang}\n${content}\n\`\`\``;
 }
 
 /**

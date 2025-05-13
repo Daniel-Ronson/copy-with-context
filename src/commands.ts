@@ -14,6 +14,7 @@ import { isBinaryFile, isLargeFile, readFileContent, getRelativePath } from './u
 import { formatFileContentBlock, formatSelectedCodeBlock } from './utils/formattingUtils';
 import * as path from 'path'; // Ensure path is imported if needed elsewhere, though not strictly for this change
 import { showTemporaryStatusBarMessage } from './utils/statusBarUtils';
+import { processFile } from './fileprocessor';
 
 interface ProcessedFile {
     uri: vscode.Uri;
@@ -260,8 +261,19 @@ export async function copySelectedCodeWithContextCommand(
         return;
     }
 
-    const formattedBlock = formatSelectedCodeBlock(editor, selection);
-    await vscode.env.clipboard.writeText(formattedBlock);
+    // Capture line numbers at command time (1-based)
+    const lineNumbers = {
+        start: selection.start.line + 1,
+        end: selection.end.line + 1,
+    };
 
-    showTemporaryStatusBarMessage(statusBarItem, `${SUCCESS_PREFIX}Copied selected code with context`);
+    // Use the updated formatSelectedCodeBlock
+    const formatted = formatSelectedCodeBlock(editor, selection, lineNumbers);
+
+    if (formatted) {
+        await vscode.env.clipboard.writeText(formatted);
+        showTemporaryStatusBarMessage(statusBarItem, `${SUCCESS_PREFIX}Copied selected code with context`);
+    } else {
+        showTemporaryStatusBarMessage(statusBarItem, `${INFO_PREFIX}No text selected`);
+    }
 }
