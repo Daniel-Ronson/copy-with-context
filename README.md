@@ -2,25 +2,26 @@
 
 <!-- Optional: Add other badges like build status or license if applicable -->
 
-Effortlessly copy the content of multiple files and entire folders from the VS Code Explorer to your clipboard, formatted perfectly to use as context for ChatGPT, Gemini, Grok, Ai Studio.
+Bulk Copy the content of multiple files and folders from the VS Code Explorer onto your clipboard, formatted perfectly to use as context for ChatGPT, Gemini, Grok, Ai Studio.
 
-**Copy files in a way that llms can easily understand by appending filenames, and having clear file boundaries.**
+**Copy multiple files in a way that llms can easily understand by appending filenames, and having clear file boundaries. Formatted in markdown with filenames as headers.**
 
 ## Copy Files and Folders
 ![Context Copy Demo](https://raw.githubusercontent.com/Daniel-Ronson/copy-with-context/main/public/gifs/copy-demo.gif)
+*   **LLM-Friendly Formatting:** Output includes clear delimiters with relative paths:
+    ````text
+    #### src/fileUtils.ts
+    ```typescript
+    // Content of fileUtils.ts
+    ```
+    #### src/package.json
+    ```json
+    // Content of package.json
+    ```
+    ````
 ## Features
 *   **Multi-Select Support:** Select any combination of files and folders
 *   **Customizable exclusions:** Configure which files and folders to exclude
-*   **LLM-Friendly Formatting:** Output includes clear delimiters with relative paths:
-    ````text
-    ```[src/utils/fileUtils.ts]
-    // Content of fileUtils.ts
-    ```
-    
-    ```[src/command.ts]
-    // Content of command.ts
-    ```
-    ````
 *   **Smart Filtering:**
     *   **Skips** .env | binary files | images/videos | archives
     *   **Skips excessively large files** (files > 5MB not copied)
