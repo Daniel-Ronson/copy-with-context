@@ -2,7 +2,7 @@
 
 <!-- Optional: Add other badges like build status or license if applicable -->
 
-Bulk Copy the content of multiple files and folders from the VS Code Explorer onto your clipboard, formatted perfectly to use as context for ChatGPT, Gemini, Grok, Ai Studio.
+Bulk Copy the content of multiple files and folders from the VS Code Explorer onto your clipboard, formatted in markdown. Perfect to use as context for ChatGPT, Gemini, Claude, or Ai Studio.
 
 **Copy multiple files in a way that llms can easily understand by appending filenames, and having clear file boundaries. Formatted in markdown with filenames as headers.**
 
@@ -69,4 +69,7 @@ dist
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome! Please feel free to open an issue or submit a pull request on Github: [project repository](https://github.com/Daniel-Ronson/copy-with-context.git) <!-- Replace with your actual repo URL -->.
+Contributions, issues, and feature requests are welcome! Please open an issue or submit a pull request on Github: [project repository](https://github.com/Daniel-Ronson/copy-with-context.git) <!-- Replace with your actual repo URL -->.
+
+
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/copy-context.copy-with-context?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=copy-context.copy-with-context&ssr=false#overview)
