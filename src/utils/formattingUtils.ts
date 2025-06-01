@@ -2,6 +2,17 @@ import * as vscode from 'vscode';
 import { getMarkdownLanguage } from './fileUtils';
 
 /**
+ * Determines if a file is a markdown file based on its extension.
+ * makrdown files containing code blocks are formatted with 6 backticks to avoid conflicts with internal code blocks.
+ * @param filePath The file path to check.
+ * @returns True if the file is a markdown file, false otherwise.
+ */
+function isMarkdown(filePath: string): boolean {
+    const extension = filePath.toLowerCase();
+    return extension.endsWith('.md') || extension.endsWith('.markdown');
+}
+
+/**
  * Formats the file path and content into the specified code-fenced block.
  * ```[<relative/path/to/file>]
  * <file-content>
@@ -22,8 +33,14 @@ export function formatFileContentBlock(relativePath: string, content: string): s
     // Trim trailing newlines efficiently
     const trimmedContent = trimTrailingNewlines(content);
     const lang = getMarkdownLanguage(relativePath);
-    return `#### ${cleanPath}\n\`\`\`${lang}\n${trimmedContent}\n\`\`\``;
+    
+    // Use 6 backticks for markdown files to avoid conflicts with internal code blocks
+    if (isMarkdown(relativePath)) {
+        return `#### ${cleanPath}\n\`\`\`\`\`\`${lang}\n${trimmedContent}\n\`\`\`\`\`\``;
     }
+    
+    return `#### ${cleanPath}\n\`\`\`${lang}\n${trimmedContent}\n\`\`\``;
+}
 
 /**
  * Formats selected code with context from the active editor.
@@ -47,7 +64,14 @@ export function formatSelectedCodeBlock(
     // Add line numbers to the header
     const lineInfo = lineNumbers ? `(lines ${lineNumbers.start}-${lineNumbers.end})` : '';
     const lang = getMarkdownLanguage(relativePath);
-    return `#### ${cleanPath} ${lineInfo}\n\`\`\`${lang}\n${selectedText}\n\`\`\``;}
+    
+    // Use 6 backticks for markdown files to avoid conflicts with internal code blocks
+    if (isMarkdown(relativePath)) {
+        return `#### ${cleanPath} ${lineInfo}\n\`\`\`\`\`\`${lang}\n${selectedText}\n\`\`\`\`\`\``;
+    }
+    
+    return `#### ${cleanPath} ${lineInfo}\n\`\`\`${lang}\n${selectedText}\n\`\`\``;
+}
 
 /**
  * Efficiently trims trailing whitespace from a string by working from the end.
