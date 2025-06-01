@@ -3,7 +3,7 @@
   "displayName": "Copy to LLM Context",
   "publisher": "copy-context",
   "description": "Copy files onto clipboard in Markdown format along with relative paths. Format is LLM friendly.",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "icon" : "public/copy-context-icon.png",
   "engines": {
     "vscode": "^1.75.0"
