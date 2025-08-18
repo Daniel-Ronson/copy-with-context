@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import {
-    MAX_FILE_SIZE_BYTES,
     FILE_SEPARATOR,
     WARNING_PREFIX,
     SUCCESS_PREFIX,
@@ -14,7 +13,17 @@ import { isBinaryFile, isLargeFile, readFileContent, getRelativePath } from './u
 import { formatFileContentBlock, formatSelectedCodeBlock } from './utils/formattingUtils';
 import * as path from 'path'; // Ensure path is imported if needed elsewhere, though not strictly for this change
 import { showTemporaryStatusBarMessage } from './utils/statusBarUtils';
-import { processFile } from './fileprocessor';
+
+// Global status bar item reference
+let globalStatusBarItem: vscode.StatusBarItem;
+
+export function setGlobalStatusBarItem(statusBarItem: vscode.StatusBarItem) {
+    globalStatusBarItem = statusBarItem;
+}
+
+export function getGlobalStatusBarItem(): vscode.StatusBarItem {
+    return globalStatusBarItem;
+}
 
 interface ProcessedFile {
     uri: vscode.Uri;
@@ -99,6 +108,14 @@ async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise
                     filesInDir.forEach(fileUri => {
                         uniqueFileUrisMap.set(fileUri.fsPath, fileUri);
                     });
+                    
+                    // Warn if we hit the recursion limit
+                    if (filesInDir.length >= MAX_FILES_TO_RECURSIVELY_GET) {
+                        const dirName = path.basename(uri.fsPath);
+                        vscode.window.showWarningMessage(
+                            `${WARNING_PREFIX}Directory "${dirName}" contains too many files. Only first ${MAX_FILES_TO_RECURSIVELY_GET} files processed.`
+                        );
+                    }
                 });
                 // Wrap the PromiseLike in Promise.resolve() to fix type mismatch
                 folderExpansionPromises.push(Promise.resolve(promise));
@@ -119,6 +136,117 @@ async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise
 
     // Return the unique file URIs as an array
     return Array.from(uniqueFileUrisMap.values());
+}
+
+/**
+ * Normalizes SCM arguments to extract URIs from various SCM object types
+ */
+function normalizeScmArgs(args: any[]): vscode.Uri[] {
+    const uris: vscode.Uri[] = [];
+
+    const visit = (x: any) => {
+        if (!x) {
+            return;
+        }
+        if (Array.isArray(x)) { 
+            x.forEach(visit); 
+            return; 
+        }
+
+        // SourceControlResourceState
+        if (x.resourceUri instanceof vscode.Uri) { 
+            uris.push(x.resourceUri); 
+            return; 
+        }
+
+        // SourceControlResourceGroup (has .resourceStates)
+        if (x.resourceStates && Symbol.iterator in Object(x.resourceStates)) {
+            for (const s of x.resourceStates) {
+                visit(s);
+            }
+            return;
+        }
+
+        // Direct Uri (in case another provider passes Uri)
+        if (x instanceof vscode.Uri) { 
+            uris.push(x); 
+            return; 
+        }
+    };
+
+    args.forEach(visit);
+
+    // De-duplicate by fsPath (case-insensitive on Windows)
+    const key = (p: string) => process.platform === 'win32' ? p.toLowerCase() : p;
+    return [...new Map(uris.map(u => [key(u.fsPath), u])).values()];
+}
+
+/**
+ * SCM-specific command handler that properly receives multiple resource states
+ * @param args Multiple selected SCM resource states or groups
+ */
+export async function copyScmSelectionWithContextCommand(...args: any[]): Promise<void> {
+    const statusBarItem = getGlobalStatusBarItem();
+    if (!statusBarItem) {
+        vscode.window.showErrorMessage('Copy Context: status bar not initialized');
+        return;
+    }
+    
+    await new Promise(r => setTimeout(r, 10));
+
+    const urisToProcess = normalizeScmArgs(args);
+
+    if (urisToProcess.length === 0) {
+        showTemporaryStatusBarMessage(statusBarItem, `${INFO_PREFIX}No files selected`);
+        return;
+    }
+
+    const results = await Promise.all(urisToProcess.map(processUri));
+    const successfulFiles = results.filter(r => r.status === 'ok') as ProcessedFile[];
+    const skippedFiles = results.filter(r => r.status !== 'ok' && r.status !== 'skipped_directory');
+
+    // Sort for deterministic order
+    successfulFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+
+    if (successfulFiles.length === 0) {
+        let msg = `${INFO_PREFIX}No valid text files found to copy.`;
+        if (skippedFiles.length) {
+            msg += ` Skipped ${skippedFiles.length} file(s).`;
+        }
+        showTemporaryStatusBarMessage(statusBarItem, msg);
+        return;
+    }
+
+    const formattedBlocks = successfulFiles
+        .map(f => formatFileContentBlock(f.relativePath, f.content!))
+        .filter(Boolean);
+
+    if (formattedBlocks.length) {
+        await vscode.env.clipboard.writeText(formattedBlocks.join(FILE_SEPARATOR));
+        showTemporaryStatusBarMessage(statusBarItem, `Copied ${formattedBlocks.length} file(s) to clipboard`);
+    }
+
+    if (skippedFiles.length) {
+        const rc = { large: 0, binary: 0, error: 0, ignored: 0 };
+        skippedFiles.forEach(f => {
+            if (f.status === 'skipped_large') {
+                rc.large++;
+            } else if (f.status === 'skipped_binary') {
+                rc.binary++;
+            } else if (f.status === 'skipped_read_error') {
+                rc.error++;
+            } else if (f.status === 'skipped_ignored') {
+                rc.ignored++;
+            }
+        });
+        const summary = [
+            rc.large ? `${rc.large} large` : '',
+            rc.binary ? `${rc.binary} binary` : '',
+            rc.error ? `${rc.error} unreadable/error` : '',
+            rc.ignored ? `${rc.ignored} ignored` : ''
+        ].filter(Boolean).join(', ');
+        vscode.window.showWarningMessage(`${WARNING_PREFIX}Skipped ${skippedFiles.length} file(s)${summary ? ` (${summary})` : ''}`);
+    }
 }
 
 /**
@@ -170,6 +298,9 @@ export async function copySelectionWithContextCommand(
         }
         // Directories are silently ignored as per spec
     });
+
+    // Sort for deterministic order
+    successfulFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
     if (successfulFiles.length === 0) {
         let tempMessage = `${INFO_PREFIX}No valid text files found in selection to copy.`;
@@ -229,11 +360,13 @@ export async function copySelectionWithContextCommand(
         const reasonSummary = [
             reasonCounts.large > 0 ? `${reasonCounts.large} large` : '',
             reasonCounts.binary > 0 ? `${reasonCounts.binary} binary` : '',
-            reasonCounts.error > 0 ? `${reasonCounts.error} unreadable/error` : ''
+            reasonCounts.error > 0 ? `${reasonCounts.error} unreadable/error` : '',
+            reasonCounts.ignored > 0 ? `${reasonCounts.ignored} ignored` : ''
         ].filter(Boolean).join(', ');
 
 
         const warningMsg = `${WARNING_PREFIX}Skipped ${skippedFiles.length} file(s) (${reasonSummary}): ${listedPaths}${ellipsis}`;
+        vscode.window.showWarningMessage(warningMsg);
     }
 }
 
@@ -244,6 +377,7 @@ export async function copySelectionWithContextCommand(
  *
  * @param statusBarItem The status bar item to use for showing success messages.
  */
+
 export async function copySelectedCodeWithContextCommand(
     statusBarItem: vscode.StatusBarItem
 ): Promise<void> {

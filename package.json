@@ -3,7 +3,7 @@
   "displayName": "Copy to LLM Context",
   "publisher": "copy-context",
   "description": "Copy files onto clipboard in Markdown format along with relative paths. Format is LLM friendly.",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "icon" : "public/copy-context-icon.png",
   "engines": {
     "vscode": "^1.75.0"
@@ -17,15 +17,19 @@
     "commands": [
       {
         "command": "contextCopy.copySelectionWithContextCommand",
-        "title": "Copy Context: LLM friendly format"
+        "title": "Copy Context: LLM friendly format (Files)"
       },
       {
         "command": "contextCopy.copySelectedCodeWithContextCommand",
-        "title": "Copy Context: LLM friendly format"
+        "title": "Copy Context: Selected Code (LLM format)"
       },
       {
         "command": "contextCopy.editExcludedPaths",
         "title": "Copy Context: Edit Excluded Paths"
+      },
+      {
+        "command": "contextCopy.copyScmSelectionWithContextCommand",
+        "title": "Copy Context: LLM friendly format (SCM)"
       }
     ],
     "configuration": {
@@ -53,6 +57,20 @@
           "group": "copy@3"
         }
       ],
+      "scm/resourceGroup/context": [
+        {
+          "command": "contextCopy.copyScmSelectionWithContextCommand",
+          "when": "scmProvider == git",
+          "group": "6_cutcopypaste@3"
+        }
+      ],
+      "scm/resourceState/context": [
+        {
+          "command": "contextCopy.copyScmSelectionWithContextCommand",
+          "when": "scmProvider == git",
+          "group": "6_cutcopypaste@3"
+        }
+      ],
       "commandPalette": [
         {
           "command": "contextCopy.copySelectionWithContextCommand",
@@ -65,6 +83,10 @@
         {
           "command": "contextCopy.editExcludedPaths",
           "when": "editorFocus || explorerViewletVisible"
+        },
+        {
+          "command": "contextCopy.copyScmSelectionWithContextCommand",
+          "when": "false"
         }
       ]
     }
