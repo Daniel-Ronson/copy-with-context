@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { copySelectionWithContextCommand, copySelectedCodeWithContextCommand } from './commands';
+import { copySelectionWithContextCommand, copySelectedCodeWithContextCommand, copyScmSelectionWithContextCommand, setGlobalStatusBarItem } from './commands';
 import { COMMAND_ID, SELECTED_CODE_COMMAND_ID, initConfigWatcher, DEFAULT_EXCLUDED_ITEMS, invalidateCache } from './constants';
 
 // Status bar item for showing temporary messages
@@ -415,6 +415,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.log('"context-copy" extension is now active!');
     
+    // Set global status bar item reference
+    setGlobalStatusBarItem(statusBarItem);
+    
     // Initialize the cache invalidation watcher for excluded paths
     initConfigWatcher(context);
 
@@ -438,6 +441,14 @@ export function activate(context: vscode.ExtensionContext) {
         editExcludedPathsCommand
     );
     context.subscriptions.push(editExcludedPathsCommandDisposable);
+
+
+    // Register the SCM multi-selection command (proper SCM API usage)
+    const copyScmSelectionCommandDisposable = vscode.commands.registerCommand(
+        'contextCopy.copyScmSelectionWithContextCommand',
+        copyScmSelectionWithContextCommand
+    );
+    context.subscriptions.push(copyScmSelectionCommandDisposable);
 }
 
 // This method is called when your extension is deactivated
