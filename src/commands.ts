@@ -74,12 +74,17 @@ async function processUri(uri: vscode.Uri): Promise<ProcessedFile> {
  * Takes an array of selected URIs (files and folders) and returns a deduplicated
  * list of only the file URIs, expanding any selected folders.
  * @param selections Array of URIs from the explorer selection.
+ * @param excludedFilenames Set of filenames to exclude (loaded once at command start).
+ * @param excludedGlob Glob pattern for excluded paths (loaded once at command start).
  * @returns A Promise resolving to an array of unique file URIs.
  */
-async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise<vscode.Uri[]> {
+async function getUniqueFileUrisFromSelection(
+    selections: vscode.Uri[],
+    excludedFilenames: ReadonlySet<string>,
+    excludedGlob: string
+): Promise<vscode.Uri[]> {
     const uniqueFileUrisMap = new Map<string, vscode.Uri>();
     const folderExpansionPromises: Promise<void>[] = [];
-    const excludedFilenames = getExcludedFilenames();
 
     for (const uri of selections) {
         try {
@@ -92,7 +97,7 @@ async function getUniqueFileUrisFromSelection(selections: vscode.Uri[]): Promise
                 // If it's a directory, find files within it
                 const promise = vscode.workspace.findFiles(
                     new vscode.RelativePattern(uri, '**/*'),
-                    getExcludedFilesPatternGlob(),
+                    excludedGlob,
                     MAX_FILES_TO_RECURSIVELY_GET
                 ).then(filesInDir => {
                     // Add files found in the directory to the map
@@ -135,7 +140,12 @@ export async function copySelectionWithContextCommand(
     allSelections: vscode.Uri[] | undefined,
     statusBarItem: vscode.StatusBarItem
 ): Promise<void> {
-        // Give the UI thread a chance to update before potentially intensive operations
+    // CRITICAL: Load exclusions ONCE at command start, before any async operations
+    // This prevents race conditions where cache could be invalidated mid-execution
+    const excludedFilenames = getExcludedFilenames();
+    const excludedGlob = getExcludedFilesPatternGlob();
+
+    // Give the UI thread a chance to update before potentially intensive operations
     await new Promise(resolve => setTimeout(resolve, 10));
 
     if (!allSelections || allSelections.length === 0) {
@@ -144,8 +154,13 @@ export async function copySelectionWithContextCommand(
         return;
     }
 
-    // --- Step 1: Get unique file URIs from the selection ---    
-    const uniqueFileUris = await getUniqueFileUrisFromSelection(allSelections);
+    // --- Step 1: Get unique file URIs from the selection ---
+    // Pass exclusions as parameters to ensure consistency throughout execution
+    const uniqueFileUris = await getUniqueFileUrisFromSelection(
+        allSelections,
+        excludedFilenames,
+        excludedGlob
+    );
 
     if (uniqueFileUris.length === 0) {
         let tempMessage = `${INFO_PREFIX}No valid files found`;

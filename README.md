@@ -61,6 +61,18 @@ dist
 .vscode-test
 ```
 
+## Available Commands
+
+1. **Copy Context: Edit Excluded Paths**
+    - **Access**: Open Command Palette (Ctrl+Shift+P / Cmd+Shift+P) and type "Copy Context: Edit Excluded Paths" to access this command
+
+2. **Copy Context: LLM friendly format** (File/Folder Copy)
+    - Right-click on files/folders in the Explorer
+
+3. **Copy Context: LLM friendly format** (Code Selection Copy)
+    - Right-click in the editor when text is selected
+
+
 ## Known Issues
 *   Currently, no known issues. Please report any bugs!
 
