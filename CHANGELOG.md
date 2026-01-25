@@ -2,6 +2,16 @@
 
 All notable changes to the "copy-with-context" extension will be documented in this file.
 
+## [1.5.4] - 2026-01-24
+
+### Fixed
+- Fixed race condition where excluded paths could be inconsistently applied during folder expansion
+- Exclusion settings are now loaded once at command start, preventing issues when configuration cache is invalidated mid-execution
+
+### Added
+- Comprehensive test suite for exclusion functionality
+- Documentation for available commands in README
+
 ## [1.5.0] - 05-06-2025
 
 ### Added
